@@ -1,0 +1,67 @@
+version: "3.7"
+
+services:
+
+  postgres:
+    image: postgres:9.6
+    environment:
+        - POSTGRES_USER=dbadmin
+        - POSTGRES_PASSWORD=testpass
+        - POSTGRES_DB=reservations
+        - PGDATA=/var/lib/postgresql/data/pgdata
+    volumes:
+        - db_data:/var/lib/postgresql/data/pgdata
+
+  api_service:
+    build:
+      context: .
+    container_name: api_service
+    command: ["python", "-u",  "./service.py"]
+    restart: always
+    environment:
+      - AWS_ACCESS_KEY_ID=foo
+      - AWS_SECRET_ACCESS_KEY=bar
+      - AWS_DEFAULT_REGION=us-east-1
+      - LOCALSTACK_ENDPOINT_URL=http://localstack:4566
+      - RESERVATION_QUEUE_URL=http://localstack:4566/000000000000/reservation-queue
+    volumes:
+      - ./src/api_service.py:/usr/src/app/service.py
+
+  reservation_service:
+    build:
+      context: .
+    container_name: reservation_service
+    command: ["python", "-u",  "./service.py"]
+    restart: always
+    environment:
+      - AWS_ACCESS_KEY_ID=foo
+      - AWS_SECRET_ACCESS_KEY=bar
+      - AWS_DEFAULT_REGION=us-east-1
+      - LOCALSTACK_ENDPOINT_URL=http://localstack:4566
+      - RESERVATION_QUEUE_URL=http://localstack:4566/000000000000/reservation-queue
+    volumes:
+      - ./src/reservation_service.py:/usr/src/app/service.py
+
+  localstack:
+    image: localstack/localstack:latest
+    container_name: localstack
+    ports:
+      - "53:53"
+      - "443:443"
+      - "8080:8080"
+      - "4566:4566"
+    environment:
+      - SERVICES=ses,sqs,serverless
+      - PORT_WEB_UI=8080
+      - DEBUG=1
+      - LOCALSTACK_API_KEY=3djLofXyS3
+      - DATA_DIR=./tmp/localstack/data
+      - LAMBDA_EXECUTOR=docker
+      - KINESIS_ERROR_PROBABILITY=0
+      - DOCKER_HOST=unix:///var/run/docker.sock
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./localstack-entrypoint.sh:/docker-entrypoint-initaws.d/localstack-entrypoint.sh
+
+volumes:
+    db_data:
