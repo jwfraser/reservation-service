@@ -1,21 +1,40 @@
 import time
 import uuid
 import boto3
+import logging
+import botocore
+
 from decouple import config
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger()
 
 LOCALSTACK_ENDPOINT_URL = config("LOCALSTACK_ENDPOINT_URL")
 RESERVATION_QUEUE_URL = config("RESERVATION_QUEUE_URL")
 
-sqs = boto3.client("sqs", endpoint_url=LOCALSTACK_ENDPOINT_URL)
+sqs = boto3.resource("sqs", endpoint_url=LOCALSTACK_ENDPOINT_URL)
 
 while (True):
     try:
-        messages = sqs.receive_message(QueueUrl=RESERVATION_QUEUE_URL,
-                                       AttributeNames=['All'], MaxNumberOfMessages=10, WaitTimeSeconds=2, VisibilityTimeout=30)
+        queue = sqs.get_queue_by_name(QueueName='reservation-queue')
 
-        messages = messages.get("Messages", [])
+        for message in queue.receive_messages():
+            print(f"Message: {message.body}")
+            message.delete()
 
-        print("Messages", messages)
-    except:
-        print("SQS receive message failure")
-        time.sleep(5)
+    # Check if available
+
+    # If available, create record, send notification
+
+    # If not, send notification about nearest available
+
+    except botocore.errorfactory.ClientError as error:
+        if error.response['Error']['Code'] == 'AWS.SimpleQueueService.NonExistentQueue':
+            logger.error(f"Queue does not exist.")
+            time.sleep(5)
+        else:
+            logger.info(f"error: {error}")
+            logger.info(f"error code: {error.response['Error']['Code']}")
+    
+    except Exception as e:
+        print(f"ERROR: {e}")

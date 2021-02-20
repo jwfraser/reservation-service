@@ -26,6 +26,8 @@ services:
       - RESERVATION_QUEUE_URL=http://localstack:4566/000000000000/reservation-queue
     volumes:
       - ./src/api_service.py:/usr/src/app/service.py
+    ports:
+      - "8080:8080"
 
   reservation_service:
     build:
@@ -48,7 +50,6 @@ services:
     ports:
       - "53:53"
       - "443:443"
-      - "8080:8080"
       - "4566:4566"
     environment:
       - SERVICES=ses,sqs,serverless
