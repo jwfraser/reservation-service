@@ -3,6 +3,7 @@ import uuid
 import boto3
 import botocore
 import logging
+import json
 
 from decouple import config
 from botocore.exceptions import EndpointConnectionError
@@ -18,28 +19,30 @@ ses = boto3.client("ses", endpoint_url=LOCALSTACK_ENDPOINT_URL)
 
 # Receive messages from SQS Queue, email
 
-def send_email():
+def send_email(to_address, subject, body):
     try:
         response = ses.send_email(
             Destination={
                 "ToAddresses": [
-                    "jwfraser@gmail.com",
+                    to_address,
                 ],
             },
             Message={
                 "Body": {
                     "Text": {
                         "Charset": "UTF-8",
-                        "Data": "Hello, world!",
+                        "Data": body,
                     }
                 },
                 "Subject": {
                     "Charset": "UTF-8",
-                    "Data": "Amazing Email Tutorial",
+                    "Data": subject,
                 },
             },
             Source="reservations@example.com",
         )
+        logger.info(f"Email sent {response}")
+        return response
     except Exception as e:
         logger.error(e)
 
@@ -59,12 +62,25 @@ while True:
         time.sleep(5)
 
 while True:
-    time.sleep(2)
-    try:
-        for message in queue.receive_messages():
-            logger.info(f"Message received: {message.body}")
-            send_email()
+    logger.info("Handling Notification Messages")
+    for message in queue.receive_messages(MaxNumberOfMessages=10,WaitTimeSeconds=10):
+        logger.info(f"Message received: {message.body}")
+        data = json.loads(message.body)
+        if data["status"] == "success":
+            body = f"Successfully booked appointment for {data['start_time']} to {data['end_time']}"
+            subject = "Reservation successful"
+        else:
+            body = f"Failed to book appointment.  Next available slot: {data['start_time']} to {data['end_time']}"
+            subject = "Reservation failed"
+
+        email_response = send_email(data["email"], subject, body)
+
+        response_code = email_response["ResponseMetadata"]["HTTPStatusCode"]
+        
+        logger.info(f"RESPONSE CODE TYPE: {type(response_code)}")
+
+        if response_code == 200:
+            logger.info(f"Email sent to: {data['email']}")
             message.delete()
-    except:
-        logger.error("SQS receive message failure")
-        time.sleep(5)
+        else:
+            raise ConnectionError(f"Notification not sent.  HTTPStatusCode: {response_code}")

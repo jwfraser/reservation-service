@@ -76,7 +76,6 @@ services:
       - "8081:8081"
     environment:
       - SERVICES=ses,sqs
-      # - LOCALSTACK_API_KEY=3djLofXyS3
       - PORT_WEB_UI=8081
       - DEBUG=1
       - DATA_DIR=./tmp/localstack/data

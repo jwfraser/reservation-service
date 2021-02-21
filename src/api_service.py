@@ -38,10 +38,6 @@ while True:
         logger.info("SQS Not Available")
         time.sleep(5)
 
-@app.get("/")
-async def read_root():
-    return {"Hello": "World"}
-
 @app.post("/")
 async def create_reservation(reservation: Reservation):
 
@@ -66,7 +62,3 @@ async def create_reservation(reservation: Reservation):
 
 if __name__ == "__main__":
     uvicorn.run("service:app", host="0.0.0.0", port=int(port), reload=True)
-
-# Validate parameters
-
-# Send event to reservation
