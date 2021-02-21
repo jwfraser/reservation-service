@@ -3,6 +3,12 @@ import uuid
 import boto3
 import logging
 import botocore
+import json
+import os
+
+from db import connect_db
+
+from sqlalchemy import create_engine
 
 from decouple import config
 
@@ -10,16 +16,17 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger()
 
 LOCALSTACK_ENDPOINT_URL = config("LOCALSTACK_ENDPOINT_URL")
-RESERVATION_QUEUE_URL = config("RESERVATION_QUEUE_URL")
 
 sqs = boto3.resource("sqs", endpoint_url=LOCALSTACK_ENDPOINT_URL)
+
 
 while (True):
     try:
         queue = sqs.get_queue_by_name(QueueName='reservation-queue')
-
+    
         for message in queue.receive_messages():
-            print(f"Message: {message.body}")
+            reservation = json.loads(message.body)
+            print(f"Email: {reservation['employee_email']}")
             message.delete()
 
     # Check if available

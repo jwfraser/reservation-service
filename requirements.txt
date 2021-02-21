@@ -3,3 +3,5 @@ python-decouple
 uuid
 fastapi
 uvicorn==0.11.5
+pydantic==1.5.1
+SQLAlchemy==1.3.17
