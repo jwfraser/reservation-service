@@ -7,4 +7,4 @@ class Reservation(BaseModel):
     end_time: datetime
     employee_email: str
     employee_name: str
-    resource_id: str
+    workplace: str

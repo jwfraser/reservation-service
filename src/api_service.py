@@ -4,23 +4,22 @@ import boto3
 import os
 import uvicorn
 import botocore
-import logging
 
-from schemas import Reservation
 from botocore.exceptions import EndpointConnectionError
 
 from decouple import config
 from fastapi import FastAPI
 
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger()
+from common import logger
+from schemas import Reservation
 
-LOCALSTACK_ENDPOINT_URL = config("LOCALSTACK_ENDPOINT_URL")
+
+ENDPOINT_URL = config("ENDPOINT_URL")
 
 app = FastAPI()
 
-sqs_client = boto3.client("sqs", endpoint_url=LOCALSTACK_ENDPOINT_URL)
-sqs_resource = boto3.resource("sqs", endpoint_url=LOCALSTACK_ENDPOINT_URL)
+sqs_client = boto3.client("sqs", endpoint_url=ENDPOINT_URL)
+sqs_resource = boto3.resource("sqs", endpoint_url=ENDPOINT_URL)
 port = os.getenv("PORT", "8080")
 
 while True:

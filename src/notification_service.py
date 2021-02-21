@@ -2,20 +2,18 @@ import time
 import uuid
 import boto3
 import botocore
-import logging
 import json
 
 from decouple import config
 from botocore.exceptions import EndpointConnectionError
 
+from common import logger
 
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger()
 
-LOCALSTACK_ENDPOINT_URL = config("LOCALSTACK_ENDPOINT_URL")
+ENDPOINT_URL = config("ENDPOINT_URL")
 
-sqs = boto3.resource("sqs", endpoint_url=LOCALSTACK_ENDPOINT_URL)
-ses = boto3.client("ses", endpoint_url=LOCALSTACK_ENDPOINT_URL)
+sqs = boto3.resource("sqs", endpoint_url=ENDPOINT_URL)
+ses = boto3.client("ses", endpoint_url=ENDPOINT_URL)
 
 # Receive messages from SQS Queue, email
 
@@ -41,7 +39,6 @@ def send_email(to_address, subject, body):
             },
             Source="reservations@example.com",
         )
-        logger.info(f"Email sent {response}")
         return response
     except Exception as e:
         logger.error(e)
@@ -62,7 +59,6 @@ while True:
         time.sleep(5)
 
 while True:
-    logger.info("Handling Notification Messages")
     for message in queue.receive_messages(MaxNumberOfMessages=10,WaitTimeSeconds=10):
         logger.info(f"Message received: {message.body}")
         data = json.loads(message.body)
@@ -76,8 +72,6 @@ while True:
         email_response = send_email(data["email"], subject, body)
 
         response_code = email_response["ResponseMetadata"]["HTTPStatusCode"]
-        
-        logger.info(f"RESPONSE CODE TYPE: {type(response_code)}")
 
         if response_code == 200:
             logger.info(f"Email sent to: {data['email']}")

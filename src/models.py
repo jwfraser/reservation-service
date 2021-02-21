@@ -1,6 +1,6 @@
 import uuid
 
-from sqlalchemy import Column, String, DateTime
+from sqlalchemy import Column, String, DateTime, JSON
 from sqlalchemy.dialects.postgresql import UUID
 
 from db import Base
@@ -13,4 +13,4 @@ class Reservation(Base):
     end_time = Column(DateTime())
     employee_email = Column(String(256))
     employee_name = Column(String(256))
-    resource_id = Column(String(36))
+    workplace = Column(String(36))

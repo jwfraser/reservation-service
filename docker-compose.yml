@@ -25,10 +25,11 @@ services:
       - AWS_ACCESS_KEY_ID=foo
       - AWS_SECRET_ACCESS_KEY=bar
       - AWS_DEFAULT_REGION=us-east-1
-      - LOCALSTACK_ENDPOINT_URL=http://localstack:4566
+      - ENDPOINT_URL=http://localstack:4566
     volumes:
       - ./src/api_service.py:/usr/src/app/service.py
       - ./src/schemas.py:/usr/src/app/schemas.py
+      - ./src/common.py:/usr/src/app/common.py
     ports:
       - "8080:8080"
 
@@ -47,11 +48,12 @@ services:
       - POSTGRES_DB=reservations
       - POSTGRES_HOST=postgres
       - POSTGRES_PORT=5432
-      - LOCALSTACK_ENDPOINT_URL=http://localstack:4566
+      - ENDPOINT_URL=http://localstack:4566
     volumes:
       - ./src/reservation_service.py:/usr/src/app/service.py
       - ./src/db.py:/usr/src/app/db.py
       - ./src/models.py:/usr/src/app/models.py
+      - ./src/common.py:/usr/src/app/common.py
 
   notification_service:
     build:
@@ -63,9 +65,10 @@ services:
       - AWS_ACCESS_KEY_ID=foo
       - AWS_SECRET_ACCESS_KEY=bar
       - AWS_DEFAULT_REGION=us-east-1
-      - LOCALSTACK_ENDPOINT_URL=http://localstack:4566
+      - ENDPOINT_URL=http://localstack:4566
     volumes:
       - ./src/notification_service.py:/usr/src/app/service.py
+      - ./src/common.py:/usr/src/app/common.py
 
   localstack:
     image: localstack/localstack-full
