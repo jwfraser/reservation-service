@@ -4,6 +4,7 @@ services:
 
   postgres:
     image: postgres:9.6
+    container_name: postgres
     environment:
         - POSTGRES_USER=dbadmin
         - POSTGRES_PASSWORD=testpass
@@ -44,32 +45,49 @@ services:
       - POSTGRES_USER=dbadmin
       - POSTGRES_PASSWORD=testpass
       - POSTGRES_DB=reservations
-      - POSTGRES_HOST=localhost
+      - POSTGRES_HOST=postgres
       - POSTGRES_PORT=5432
       - LOCALSTACK_ENDPOINT_URL=http://localstack:4566
     volumes:
       - ./src/reservation_service.py:/usr/src/app/service.py
       - ./src/db.py:/usr/src/app/db.py
+      - ./src/models.py:/usr/src/app/models.py
+
+  notification_service:
+    build:
+      context: .
+    container_name: notification_service
+    command: ["python", "-u",  "./service.py"]
+    restart: always
+    environment:
+      - AWS_ACCESS_KEY_ID=foo
+      - AWS_SECRET_ACCESS_KEY=bar
+      - AWS_DEFAULT_REGION=us-east-1
+      - LOCALSTACK_ENDPOINT_URL=http://localstack:4566
+    volumes:
+      - ./src/notification_service.py:/usr/src/app/service.py
 
   localstack:
-    image: localstack/localstack:latest
+    image: localstack/localstack-full
     container_name: localstack
     ports:
-      - "53:53"
       - "443:443"
       - "4566:4566"
+      - "8081:8081"
     environment:
-      - SERVICES=ses,sqs,serverless
-      - PORT_WEB_UI=8080
-      - DEBUG=0
-      - LOCALSTACK_API_KEY=3djLofXyS3
+      - SERVICES=ses,sqs
+      # - LOCALSTACK_API_KEY=3djLofXyS3
+      - PORT_WEB_UI=8081
+      - DEBUG=1
       - DATA_DIR=./tmp/localstack/data
-      - LAMBDA_EXECUTOR=docker
+      - LAMBDA_EXECUTOR=local
       - KINESIS_ERROR_PROBABILITY=0
       - DOCKER_HOST=unix:///var/run/docker.sock
+      - LOCALSTACK_HOSTNAME=localhost
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - ./localstack-entrypoint.sh:/docker-entrypoint-initaws.d/localstack-entrypoint.sh
+      
 
 volumes:
     db_data:

@@ -7,6 +7,7 @@ import botocore
 import logging
 
 from schemas import Reservation
+from botocore.exceptions import EndpointConnectionError
 
 from decouple import config
 from fastapi import FastAPI
@@ -22,18 +23,20 @@ sqs_client = boto3.client("sqs", endpoint_url=LOCALSTACK_ENDPOINT_URL)
 sqs_resource = boto3.resource("sqs", endpoint_url=LOCALSTACK_ENDPOINT_URL)
 port = os.getenv("PORT", "8080")
 
-try:
-    queue = sqs_resource.get_queue_by_name(QueueName='reservation-queue')
-except botocore.errorfactory.ClientError as error:
-    if error.response['Error']['Code'] == 'AWS.SimpleQueueService.NonExistentQueue':
-        logger.error(f"Queue does not exist.")
+while True:
+    try:
+        queue = sqs_resource.get_queue_by_name(QueueName='reservation-queue')
+        break
+    except botocore.errorfactory.ClientError as error:
+        if error.response['Error']['Code'] == 'AWS.SimpleQueueService.NonExistentQueue':
+            logger.error(f"Queue does not exist.")
+            time.sleep(5)
+        else:
+            logger.info(f"error: {error}")
+            logger.info(f"error code: {error.response['Error']['Code']}")
+    except EndpointConnectionError as ece:
+        logger.info("SQS Not Available")
         time.sleep(5)
-    else:
-        logger.info(f"error: {error}")
-        logger.info(f"error code: {error.response['Error']['Code']}")
-
-except Exception as e:
-    print(f"ERROR: {e}")
 
 @app.get("/")
 async def read_root():
@@ -41,6 +44,10 @@ async def read_root():
 
 @app.post("/")
 async def create_reservation(reservation: Reservation):
+
+    if reservation.start_time >= reservation.end_time:
+        logger.error("WRONG DATE")
+        return {"Status": "start_date should be before end_date"}
 
     try:
         response = sqs_client.send_message(
