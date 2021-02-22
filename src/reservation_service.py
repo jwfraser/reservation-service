@@ -60,7 +60,7 @@ def check_available(session, start_time, end_time, workplace):
         if end_conflict is not None:
             new_start = end_conflict.end_time
         new_end = new_start + delta
-        return check_available(session, new_start, new_end, workplace)
+        return check_available(session, new_start.isoformat(), new_end.isoformat(), workplace)
 
 def reservation_handler(reservation_queue, notification_queue, session):
     '''
@@ -78,7 +78,20 @@ def reservation_handler(reservation_queue, notification_queue, session):
         data = json.loads(message.body)
         reservation = Reservation(**data)
 
+        logger.info(f"START TIME 1: {dateutil.parser.parse(reservation.start_time)}")
+
         available_start, available_end = check_available(session, reservation.start_time, reservation.end_time, reservation.workplace)
+
+        fmtstring = "%m/%d/%Y, %H:%M:%S"
+
+        logger.info(f"AVAILALE START: {available_start}")
+        logger.info(f"START TIME 2: {dateutil.parser.parse(reservation.start_time)}")
+
+        start_time_str = dateutil.parser.parse(reservation.start_time).strftime(fmtstring)
+        end_time_str = dateutil.parser.parse(reservation.end_time).strftime(fmtstring)
+
+        available_start_str = dateutil.parser.parse(available_start).strftime(fmtstring)
+        available_end_str = dateutil.parser.parse(available_end).strftime(fmtstring)
 
         if available_start == reservation.start_time:
             try:
@@ -92,8 +105,8 @@ def reservation_handler(reservation_queue, notification_queue, session):
                 "status": "success",
                 "email": reservation.employee_email,
                 "name": reservation.employee_name,
-                "start_time": reservation.start_time.isoformat(),
-                "end_time": reservation.end_time.isoformat(),
+                "start_time": start_time_str,
+                "end_time": end_time_str,
                 "workplace": reservation.workplace
             }
         else:
@@ -101,10 +114,10 @@ def reservation_handler(reservation_queue, notification_queue, session):
                 "status": "failed",
                 "email": reservation.employee_email,
                 "name": reservation.employee_name,
-                "requested_start": reservation.start_time,
-                "requested_end": reservation.end_time,
-                "start_time": available_start.isoformat(),
-                "end_time": available_end.isoformat(),
+                "requested_start": start_time_str,
+                "requested_end": end_time_str,
+                "start_time": available_start_str,
+                "end_time": available_end_str,
                 "workplace": reservation.workplace
             }
             

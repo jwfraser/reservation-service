@@ -1,6 +1,7 @@
 from datetime import datetime
 
-from pydantic import BaseModel, Json, EmailStr
+from pydantic import BaseModel, Json, EmailStr, validator
+
 
 class Reservation(BaseModel):
     start_time: datetime
