@@ -17,6 +17,10 @@ from models import Reservation
 from common import logger, sqs_resource, sqs_client
 
 
+def datetime_format(dt):
+    return dateutil.parser.parse(dt).strftime("%m/%d/%Y, %H:%M:%S")
+
+
 def check_available(session, start_time, end_time, workplace):
     '''
     Takes in a database session, and searches reservations table for available time for specified workplace.
@@ -78,20 +82,13 @@ def reservation_handler(reservation_queue, notification_queue, session):
         data = json.loads(message.body)
         reservation = Reservation(**data)
 
-        logger.info(f"START TIME 1: {dateutil.parser.parse(reservation.start_time)}")
-
         available_start, available_end = check_available(session, reservation.start_time, reservation.end_time, reservation.workplace)
 
-        fmtstring = "%m/%d/%Y, %H:%M:%S"
+        start_time_str = datetime_format(reservation.start_time)
+        end_time_str = datetime_format(reservation.end_time)
 
-        logger.info(f"AVAILALE START: {available_start}")
-        logger.info(f"START TIME 2: {dateutil.parser.parse(reservation.start_time)}")
-
-        start_time_str = dateutil.parser.parse(reservation.start_time).strftime(fmtstring)
-        end_time_str = dateutil.parser.parse(reservation.end_time).strftime(fmtstring)
-
-        available_start_str = dateutil.parser.parse(available_start).strftime(fmtstring)
-        available_end_str = dateutil.parser.parse(available_end).strftime(fmtstring)
+        available_start_str = datetime_format(available_start)
+        available_end_str = datetime_format(available_end)
 
         if available_start == reservation.start_time:
             try:
