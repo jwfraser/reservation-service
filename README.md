@@ -24,10 +24,10 @@ http://localhost:8080/
 Swagger Docs can be found at http://localhost:8080/docs/
 ReDocs can be found at at http://localhost:8080/redoc
 
-# Example Query
+# Example Request
 
 ```bash
-curl -X POST "http://localhost:8080/" -H  "accept: application/json" -H  "Content-Type: application/json" -d "{\"start_time\":\"2021-02-22T00:13:45.464Z\",\"end_time\":\"2021-02-22T01:13:45.464Z\",\"employee_email\":\"user@example.com\",\"employee_name\":\"string\",\"workplace\":\"string\"}"
+curl -X POST "http://localhost:8080/reservations/" -H  "accept: application/json" -H  "Content-Type: application/json" -d "{\"start_time\":\"2021-02-22T01:10:52.559Z\",\"end_time\":\"2021-02-22T01:13:52.559Z\",\"employee_email\":\"user@example.com\",\"employee_name\":\"string\",\"workplace\":\"string\"}"
 ```
 
 # Uses

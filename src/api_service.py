@@ -32,7 +32,7 @@ while True:
         logger.info("SQS Not Available")
         time.sleep(5)
 
-@app.post("/", response_model=ReservationResponse)
+@app.post("/reservations/", response_model=ReservationResponse)
 async def create_reservation(reservation: Reservation):
 
     # Validate start_time & end_time
