@@ -1,25 +1,29 @@
 import time
 import uuid
-import boto3
 import botocore
 import json
 
-from decouple import config
 from botocore.exceptions import EndpointConnectionError
 
-from common import logger
+from common import logger, sqs_resource, ses_client
 
-
-ENDPOINT_URL = config("ENDPOINT_URL")
-
-sqs = boto3.resource("sqs", endpoint_url=ENDPOINT_URL)
-ses = boto3.client("ses", endpoint_url=ENDPOINT_URL)
 
 # Receive messages from SQS Queue, email
 
 def send_email(to_address, subject, body):
+    '''
+    Sends email over AWS SES.  Takes subject and body and sends it to to_address.
+
+        Parameters
+            to_address (str): Address to send to
+            subject (str): Subject for email
+            body (str): Body for email
+        
+        Returns
+            response (dict): Response from SES
+    '''
     try:
-        response = ses.send_email(
+        response = ses_client.send_email(
             Destination={
                 "ToAddresses": [
                     to_address,
@@ -43,24 +47,28 @@ def send_email(to_address, subject, body):
     except Exception as e:
         logger.error(e)
 
+# Checking for SQS notification-queue
+
 while True:
+    logger.info(f"Checking for notification-queue")
     try:
-        queue = sqs.get_queue_by_name(QueueName='notification-queue')
+        queue = sqs_resource.get_queue_by_name(QueueName='notification-queue')
         break
     except botocore.errorfactory.ClientError as error:
         if error.response['Error']['Code'] == 'AWS.SimpleQueueService.NonExistentQueue':
             logger.error(f"Queue does not exist.")
             time.sleep(5)
         else:
-            logger.info(f"error: {error}")
-            logger.info(f"error code: {error.response['Error']['Code']}")
+            logger.error(f"error: {error}")
+            logger.error(f"error code: {error.response['Error']['Code']}")
     except EndpointConnectionError as ece:
-        logger.info("SQS Not Available")
+        logger.error("SQS Not Available")
         time.sleep(5)
 
+# Handle messages in notification queue.
+
 while True:
-    for message in queue.receive_messages(MaxNumberOfMessages=10,WaitTimeSeconds=10):
-        logger.info(f"Message received: {message.body}")
+    for message in queue.receive_messages(MaxNumberOfMessages=10,WaitTimeSeconds=10,VisibilityTimeout=5):
         data = json.loads(message.body)
         if data["status"] == "success":
             body = f"Successfully booked appointment for {data['start_time']} to {data['end_time']}"

@@ -1,28 +1,23 @@
 import time
 import uuid
-import boto3
 import os
 import uvicorn
 import botocore
 
 from botocore.exceptions import EndpointConnectionError
 
-from decouple import config
 from fastapi import FastAPI
 
-from common import logger
+from common import logger, sqs_client, sqs_resource
 from schemas import Reservation
 
 
-ENDPOINT_URL = config("ENDPOINT_URL")
-
 app = FastAPI()
 
-sqs_client = boto3.client("sqs", endpoint_url=ENDPOINT_URL)
-sqs_resource = boto3.resource("sqs", endpoint_url=ENDPOINT_URL)
 port = os.getenv("PORT", "8080")
 
 while True:
+    logger.info(f"Checking for reservation-queue")
     try:
         queue = sqs_resource.get_queue_by_name(QueueName='reservation-queue')
         break
@@ -40,24 +35,33 @@ while True:
 @app.post("/")
 async def create_reservation(reservation: Reservation):
 
-    if reservation.start_time >= reservation.end_time:
-        logger.error("WRONG DATE")
-        return {"Status": "start_date should be before end_date"}
-
+    # Validate start_time & end_time
     try:
-        response = sqs_client.send_message(
-            QueueUrl=queue.url,
-            MessageBody=reservation.json(),
-            MessageDeduplicationId=str(uuid.uuid4()),
-            MessageGroupId="reservations",
-            MessageAttributes={
-                "contentType": {
-                    "StringValue": "application/json", "DataType": "String"}
-            }
-        )
-        return {"Status": "posted"}
-    except:
-        return {"Status": "SQS send message failure"}
+        if reservation.start_time >= reservation.end_time:
+            return {"Error": "start_date should be before end_date"}
+    except TypeError as e:
+        logger.error(e)
+        return {"Error": e.args}
+
+    response = sqs_client.send_message(
+        QueueUrl=queue.url,
+        MessageBody=reservation.json(),
+        MessageDeduplicationId=str(uuid.uuid4()),
+        MessageGroupId="reservations",
+        MessageAttributes={
+            "contentType": {
+                "StringValue": "application/json", "DataType": "String"}
+        }
+    )
+
+    response_code = response["ResponseMetadata"]["HTTPStatusCode"]
+
+    if response_code == 200:
+        return {"Status": "Success"}
+    else:
+        return {"Error": f"Failed - response_code: {response_code}"}
+
+    
 
 if __name__ == "__main__":
     uvicorn.run("service:app", host="0.0.0.0", port=int(port), reload=True)

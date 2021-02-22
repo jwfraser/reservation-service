@@ -1,10 +1,10 @@
 from datetime import datetime
 
-from pydantic import BaseModel, Json
+from pydantic import BaseModel, Json, EmailStr
 
 class Reservation(BaseModel):
     start_time: datetime
     end_time: datetime
-    employee_email: str
+    employee_email: EmailStr
     employee_name: str
     workplace: str
