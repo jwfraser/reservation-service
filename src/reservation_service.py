@@ -93,15 +93,19 @@ def reservation_handler(reservation_queue, notification_queue, session):
                 "email": reservation.employee_email,
                 "name": reservation.employee_name,
                 "start_time": reservation.start_time.isoformat(),
-                "end_time": reservation.end_time.isoformat()
+                "end_time": reservation.end_time.isoformat(),
+                "workplace": reservation.workplace
             }
         else:
             body = {
                 "status": "failed",
                 "email": reservation.employee_email,
                 "name": reservation.employee_name,
+                "requested_start": reservation.start_time,
+                "requested_end": reservation.end_time,
                 "start_time": available_start.isoformat(),
-                "end_time": available_end.isoformat()
+                "end_time": available_end.isoformat(),
+                "workplace": reservation.workplace
             }
             
         response = sqs_client.send_message(

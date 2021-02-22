@@ -71,10 +71,9 @@ services:
       - ./src/common.py:/usr/src/app/common.py
 
   localstack:
-    image: localstack/localstack-full
+    image: localstack/localstack-full:0.12.6
     container_name: localstack
     ports:
-      - "443:443"
       - "4566:4566"
       - "8081:8081"
     environment:
@@ -88,8 +87,7 @@ services:
       - LOCALSTACK_HOSTNAME=localhost
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
-      - ./localstack-entrypoint.sh:/docker-entrypoint-initaws.d/localstack-entrypoint.sh
-      
+      - ./localstack-entrypoint.sh:/docker-entrypoint-initaws.d/localstack-entrypoint.sh    
 
 volumes:
     db_data:

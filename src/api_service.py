@@ -9,7 +9,7 @@ from botocore.exceptions import EndpointConnectionError
 from fastapi import FastAPI
 
 from common import logger, sqs_client, sqs_resource
-from schemas import Reservation
+from schemas import Reservation, ReservationResponse
 
 
 app = FastAPI()
@@ -32,16 +32,16 @@ while True:
         logger.info("SQS Not Available")
         time.sleep(5)
 
-@app.post("/")
+@app.post("/", response_model=ReservationResponse)
 async def create_reservation(reservation: Reservation):
 
     # Validate start_time & end_time
     try:
         if reservation.start_time >= reservation.end_time:
-            return {"Error": "start_date should be before end_date"}
+            return {"status": "Failed", "message": "start_date should be before end_date"}
     except TypeError as e:
         logger.error(e)
-        return {"Error": e.args}
+        return {"status": "Failed", "message": e.args}
 
     response = sqs_client.send_message(
         QueueUrl=queue.url,
@@ -57,9 +57,9 @@ async def create_reservation(reservation: Reservation):
     response_code = response["ResponseMetadata"]["HTTPStatusCode"]
 
     if response_code == 200:
-        return {"Status": "Success"}
+        return {"status": "Success", "message": "Request Sent"}
     else:
-        return {"Error": f"Failed - response_code: {response_code}"}
+        return {"status": "Failed", "message": f"Queue request failed.  response_code: {response_code}"}
 
     
 

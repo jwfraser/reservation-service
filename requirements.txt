@@ -1,7 +1,7 @@
-boto3
-python-decouple
-uuid
-fastapi
+boto3==1.17.12
+python-decouple==3.4
+uuid==1.30
+fastapi==0.63.0
 uvicorn==0.11.5
 pydantic==1.5.1
 SQLAlchemy==1.3.17

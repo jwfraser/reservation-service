@@ -3,6 +3,8 @@ import uuid
 import botocore
 import json
 
+import dateutil.parser
+
 from botocore.exceptions import EndpointConnectionError
 
 from common import logger, sqs_resource, ses_client
@@ -70,12 +72,34 @@ while True:
 while True:
     for message in queue.receive_messages(MaxNumberOfMessages=10,WaitTimeSeconds=10,VisibilityTimeout=5):
         data = json.loads(message.body)
+        delta = dateutil.parser.parse(data['end_time']) - dateutil.parser.parse(data['start_time'])
+
+        logger.info(f"START DATE: {data['start_time']} END DATE: {data['end_time']} DELTA: {delta}")
+
+        days, rem = divmod(delta.seconds, 86400)
+        hours, rem = divmod(rem, 3600)
+        minutes, seconds = divmod(rem, 60)
+
+        locals_ = locals()
+        magnitudes_str = ("{n} {magnitude}".format(n=int(locals_[magnitude]), magnitude=magnitude)
+                for magnitude in ("days", "hours", "minutes", "seconds") if locals_[magnitude])
+        eta_str = ", ".join(magnitudes_str)
+
         if data["status"] == "success":
-            body = f"Successfully booked appointment for {data['start_time']} to {data['end_time']}"
-            subject = "Reservation successful"
+            body = f"""
+Successfully booked appointment for {eta_str} at {data['workplace']} 
+Starting at {data['start_time']} 
+Ending at {data['end_time']}
+            """
+            subject = f"Reservation successful for {data['workplace']}"
         else:
-            body = f"Failed to book appointment.  Next available slot: {data['start_time']} to {data['end_time']}"
-            subject = "Reservation failed"
+            body = f"""
+Failed to book appointment for {eta_str} at {data['workplace']} at 
+Requested start:{data['requested_start']}
+Requested end:{data['requested_end']}
+Next available slot for {eta_str} for that workplace is: {data['start_time']} to {data['end_time']}
+            """
+            subject = f"Reservation failed for {data['workplace']}"
 
         email_response = send_email(data["email"], subject, body)
 

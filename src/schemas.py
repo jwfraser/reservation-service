@@ -8,3 +8,7 @@ class Reservation(BaseModel):
     employee_email: EmailStr
     employee_name: str
     workplace: str
+
+class ReservationResponse(BaseModel):
+    status: str
+    message: str
