@@ -74,8 +74,6 @@ while True:
         data = json.loads(message.body)
         delta = dateutil.parser.parse(data['end_time']) - dateutil.parser.parse(data['start_time'])
 
-        logger.info(f"START DATE: {data['start_time']} END DATE: {data['end_time']} DELTA: {delta}")
-
         days, rem = divmod(delta.seconds, 86400)
         hours, rem = divmod(rem, 3600)
         minutes, seconds = divmod(rem, 60)
@@ -87,17 +85,17 @@ while True:
 
         if data["status"] == "success":
             body = f"""
-Successfully booked appointment for {eta_str} at {data['workplace']} 
+Hello {data['name']},
+You have successfully reserved {data['workplace']} for {eta_str}
 Starting at {data['start_time']} 
 Ending at {data['end_time']}
             """
             subject = f"Reservation successful for {data['workplace']}"
         else:
             body = f"""
-Failed to book appointment for {eta_str} at {data['workplace']} at 
-Requested start:{data['requested_start']}
-Requested end:{data['requested_end']}
-Next available slot for {eta_str} for that workplace is: {data['start_time']} to {data['end_time']}
+Hello {data['name']},
+We have failed to reserve {data['workplace']} between {data['requested_start']} and {data['requested_end']}
+Next available slot for {eta_str} for that workplace is from {data['start_time']} to {data['end_time']}
             """
             subject = f"Reservation failed for {data['workplace']}"
 
